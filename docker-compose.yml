@@ -1,4 +1,5 @@
-version: "3"
+version: '3.8'
+
 services:
   nosql-db:
     image: mvertes/alpine-mongo
@@ -6,70 +7,91 @@ services:
       - "27018:27017"
     container_name: nosql-db
     volumes:
-      - ./db/:/data/db
+      - ./db:/data/db
+    networks:
+      - app-network
 
   rabbitmq:
     image: rabbitmq:alpine
     container_name: rabbitmq
     ports:
       - '5672:5672'
+    networks:
+      - app-network
 
   products:
     build:
-      dockerfile: Dockerfile
       context: ./products
+      dockerfile: Dockerfile
     container_name: products
     ports:
       - "8002:8002"
+    environment:
+      - MONGO_URI=mongodb+srv://rajugupta4613:microsevice@microsevice.pppb5a0.mongodb.net/ms_product?retryWrites=true&w=majority
+      - RABBITMQ_URI=amqps://estkommm:iwTTH2KvCalXgSCwbrevEZ1uzcI1yCEk@vulture.rmq.cloudamqp.com/estkommm
     restart: always
     depends_on:
-      - "nosql-db"
-      - "rabbitmq"
+      - nosql-db
+      - rabbitmq
     volumes:
       - .:/app
       - /app/products/node_modules
+    networks:
+      - app-network
 
-    env_file:
-      - ./products/.env.dev
   shopping:
     build:
-      dockerfile: Dockerfile
       context: ./shopping
+      dockerfile: Dockerfile
     container_name: shopping
     ports:
       - "8003:8003"
+    environment:
+      - MONGO_URI=mongodb+srv://rajugupta4613:microsevice@microsevice.pppb5a0.mongodb.net/ms_shopping?retryWrites=true&w=majority
+      - RABBITMQ_URI=amqps://estkommm:iwTTH2KvCalXgSCwbrevEZ1uzcI1yCEk@vulture.rmq.cloudamqp.com/estkommm
     restart: always
     depends_on:
-      - "nosql-db"
-      - "rabbitmq"
+      - nosql-db
+      - rabbitmq
     volumes:
       - .:/app
       - /app/shopping/node_modules
-    env_file:
-      - ./shopping/.env.dev
+    networks:
+      - app-network
+
   customer:
     build:
-      dockerfile: Dockerfile
       context: ./customer
+      dockerfile: Dockerfile
     container_name: customer
     ports:
       - "8001:8001"
+    environment:
+      - MONGO_URI=mongodb+srv://rajugupta4613:microsevice@microsevice.pppb5a0.mongodb.net/ms_customer?retryWrites=true&w=majority
+      - RABBITMQ_URI=amqps://estkommm:iwTTH2KvCalXgSCwbrevEZ1uzcI1yCEk@vulture.rmq.cloudamqp.com/estkommm
     restart: always
     depends_on:
-      - "nosql-db"
-      - "rabbitmq"
+      - nosql-db
+      - rabbitmq
     volumes:
       - .:/app/
       - /app/customer/node_modules
-    env_file:
-      - ./customer/.env.dev
+    networks:
+      - app-network
+
   nginx-proxy:
     build:
-      dockerfile: Dockerfile
       context: ./proxy
+      dockerfile: Dockerfile
     depends_on:
       - products
       - shopping
       - customer
     ports:
-      - 8080:80
+      - "8080:80"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
